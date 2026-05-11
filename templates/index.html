@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Chatbot 8-Bit</title>
+    <!-- Use Google Fonts for Retro 8-bit Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="scanlines"></div>
+    <div class="container">
+        <header class="header">
+            <h1>RETRO CHAT</h1>
+            <p>v1.0.0 - SYSTEM READY</p>
+        </header>
+
+        <main class="chat-window">
+            <div id="chat-messages" class="chat-messages">
+                <div class="message bot">
+                    <div class="avatar">BOT</div>
+                    <div class="content">Halo! Ada yang bisa saya bantu hari ini?</div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <span class="prompt-symbol">&gt;</span>
+                <input type="text" id="user-input" placeholder="Tulis pesan..." autocomplete="off">
+                <button id="send-button">KIRIM</button>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>WARNING: CHAT HISTORY IS NOT SAVED. REFRESHING WILL CLEAR ALL DATA.</p>
+        </footer>
+    </div>
+
+    <!-- Include marked.js to parse markdown from the bot -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
