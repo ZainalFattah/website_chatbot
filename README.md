@@ -5,7 +5,7 @@ Proyek ini adalah aplikasi chatbot web yang sangat ringan, didesain khusus untuk
 Aplikasi ini menggunakan:
 - **Backend:** Python + Flask (sangat ringan dan tidak memakan banyak RAM)
 - **Frontend:** HTML, CSS murni, dan Vanilla JavaScript (desain retro 8-bit bergaya terminal jadul)
-- **AI Engine:** Google Gemini API (model `gemini-1.5-flash`). Karena kita menggunakan API, server Anda tidak perlu melakukan komputasi berat, semua pemrosesan AI ditangani oleh server Google.
+- **AI Engine:** Google Gemini API (model `gemini-2.5-flash`). Karena kita menggunakan API, server Anda tidak perlu melakukan komputasi berat, semua pemrosesan AI ditangani oleh server Google.
 - **Stateless:** Sesuai permintaan, aplikasi ini tidak menyimpan riwayat obrolan (chat history). Jika halaman direfresh, obrolan sebelumnya akan hilang.
 
 ---
@@ -24,12 +24,12 @@ sudo apt install python3 python3-pip python3-venv -y
 ```
 
 ### 2. Clone Repositori (Atau Upload File)
-Jika Anda menggunakan git, clone repositori ini ke server Anda. Jika tidak, upload semua file (`app.py`, `requirements.txt`, folder `templates`, dan folder `static`) ke dalam satu direktori di server, misalnya `/home/mumtaz/chatbot`.
+Jika Anda menggunakan git, clone repositori ini ke server Anda. Jika tidak, upload semua file (`app.py`, `requirements.txt`, folder `templates`, dan folder `static`) ke dalam satu direktori di server, misalnya `/home/mumtaz/website_chatbot`.
 
 ```bash
 # Contoh membuat folder dan masuk ke dalamnya
-mkdir -p /home/mumtaz/chatbot
-cd /home/mumtaz/chatbot
+mkdir -p /home/mumtaz/website_chatbot
+cd /home/mumtaz/website_chatbot
 ```
 
 *(Pastikan semua file proyek sudah berada di folder ini).*
@@ -93,7 +93,7 @@ Buat file service:
 sudo nano /etc/systemd/system/chatbot.service
 ```
 
-Isi dengan (sesuaikan path `/home/mumtaz/chatbot` jika berbeda):
+Isi dengan (sesuaikan path `/home/mumtaz/website_chatbot` jika berbeda):
 ```ini
 [Unit]
 Description=Gunicorn instance to serve Retro Chatbot
@@ -102,11 +102,11 @@ After=network.target
 [Service]
 User=mumtaz
 Group=www-data
-WorkingDirectory=/home/mumtaz/chatbot
-Environment="PATH=/home/mumtaz/chatbot/venv/bin"
+WorkingDirectory=/home/mumtaz/website_chatbot
+Environment="PATH=/home/mumtaz/website_chatbot/venv/bin"
 # Muat environment variable dari .env
-EnvironmentFile=/home/mumtaz/chatbot/.env
-ExecStart=/home/mumtaz/chatbot/venv/bin/gunicorn --workers 2 --bind 0.0.0.0:8000 app:app
+EnvironmentFile=/home/mumtaz/website_chatbot/.env
+ExecStart=/home/mumtaz/website_chatbot/venv/bin/gunicorn --workers 2 --bind 0.0.0.0:8000 app:app
 
 [Install]
 WantedBy=multi-user.target
