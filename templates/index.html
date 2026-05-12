@@ -13,34 +13,16 @@
 
 <body>
     <div class="app-frame">
-        <!-- Title Bar -->
-        <div class="title-bar">
-            <span class="title-bar-text">RetroChat • Your AI Buddy</span>
-            <div class="title-bar-controls">
-                <span class="tb-btn tb-minimize">─</span>
-                <span class="tb-btn tb-maximize">□</span>
-                <span class="tb-btn tb-close">✕</span>
-            </div>
-        </div>
-
-        <!-- Browser Bar -->
-        <div class="browser-bar">
-            <div class="browser-nav">
-                <span class="nav-btn">←</span>
-                <span class="nav-btn">→</span>
-                <span class="nav-btn">↻</span>
-            </div>
-            <div class="address-bar">
-                <span class="lock-icon">🔒</span>
-                <span>https://retrochat.app</span>
-            </div>
-            <span class="bookmark-icon">☆</span>
-        </div>
-
         <!-- Main Layout -->
         <div class="main-layout">
             <!-- Sidebar -->
             <aside class="sidebar" id="sidebar">
+                <!-- Sidebar Toggle (inside sidebar, top) -->
+                <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle Sidebar"
+                    aria-label="Toggle Sidebar">
+                    <span class="toggle-icon">◀</span>
+                </button>
+
                 <!-- Logo Area -->
                 <div class="sidebar-logo">
                     <div class="pixel-computer">
@@ -96,13 +78,24 @@
                 </div>
             </aside>
 
+            <!-- Sidebar Collapsed Toggle (shown when sidebar is hidden) -->
+            <button class="sidebar-show-btn" id="sidebar-show-btn" title="Show Sidebar" aria-label="Show Sidebar">
+                <span>▶</span>
+            </button>
+
             <!-- Content Area -->
-            <div class="content-area">
+            <div class="content-area" id="content-area">
                 <!-- Chat View -->
                 <div class="view-panel active" id="view-chat">
                     <!-- Chat Header -->
                     <div class="chat-header">
-                        <span class="chat-header-title" id="chat-header-title">Welcome to RetroChat!</span>
+                        <div class="chat-header-left">
+                            <button class="header-toggle-btn" id="header-toggle-btn" title="Toggle Sidebar"
+                                aria-label="Toggle Sidebar">
+                                ☰
+                            </button>
+                            <span class="chat-header-title" id="chat-header-title">Welcome to RetroChat!</span>
+                        </div>
                         <div class="chat-header-controls">
                             <button class="new-chat-btn" id="new-chat-btn" title="New Chat" style="display: none;">
                                 ＋ New Chat
@@ -146,7 +139,11 @@
                 <!-- History View -->
                 <div class="view-panel" id="view-history">
                     <div class="panel-header">
-                        <span class="panel-title">Chat History</span>
+                        <div class="chat-header-left">
+                            <button class="header-toggle-btn"
+                                onclick="document.getElementById('header-toggle-btn').click()">☰</button>
+                            <span class="panel-title">Chat History</span>
+                        </div>
                         <div class="window-dots">
                             <span class="dot dot-red"></span>
                             <span class="dot dot-yellow"></span>
@@ -169,7 +166,11 @@
                 <!-- Settings View -->
                 <div class="view-panel" id="view-settings">
                     <div class="panel-header">
-                        <span class="panel-title">Settings</span>
+                        <div class="chat-header-left">
+                            <button class="header-toggle-btn"
+                                onclick="document.getElementById('header-toggle-btn').click()">☰</button>
+                            <span class="panel-title">Settings</span>
+                        </div>
                         <div class="window-dots">
                             <span class="dot dot-red"></span>
                             <span class="dot dot-yellow"></span>
@@ -210,6 +211,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
     <!-- Auth Modal -->
     <div class="modal-overlay" id="auth-modal" style="display: none;">
@@ -264,9 +268,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Mobile Sidebar Toggle -->
-    <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle menu">☰</button>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>

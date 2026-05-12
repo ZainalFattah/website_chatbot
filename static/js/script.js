@@ -11,17 +11,87 @@ document.addEventListener('DOMContentLoaded', () => {
     const newChatBtn = document.getElementById('new-chat-btn');
     const chatHeaderTitle = document.getElementById('chat-header-title');
     const logoutBtn = document.getElementById('logout-btn');
-    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const sidebar = document.getElementById('sidebar');
+    const mainLayout = document.querySelector('.main-layout');
+    const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+    const sidebarShowBtn = document.getElementById('sidebar-show-btn');
+    const headerToggleBtn = document.getElementById('header-toggle-btn');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
 
     // --- State ---
     let currentUser = null;
     let currentSessionId = null;
     let isLoading = false;
+    let sidebarCollapsed = false;
 
     // --- Init ---
     checkAuth();
     userInput.focus();
+
+    // ===== Sidebar Toggle Logic =====
+    function isMobile() {
+        return window.innerWidth <= 640;
+    }
+
+    function toggleSidebar() {
+        if (isMobile()) {
+            toggleMobileSidebar();
+        } else {
+            toggleDesktopSidebar();
+        }
+    }
+
+    function toggleDesktopSidebar() {
+        sidebarCollapsed = !sidebarCollapsed;
+        if (sidebarCollapsed) {
+            sidebar.classList.add('collapsed');
+            mainLayout.classList.add('sidebar-collapsed');
+        } else {
+            sidebar.classList.remove('collapsed');
+            mainLayout.classList.remove('sidebar-collapsed');
+        }
+    }
+
+    function toggleMobileSidebar() {
+        const isOpen = sidebar.classList.contains('mobile-open');
+        if (isOpen) {
+            closeMobileSidebar();
+        } else {
+            openMobileSidebar();
+        }
+    }
+
+    function openMobileSidebar() {
+        sidebar.classList.add('mobile-open');
+        sidebarOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeMobileSidebar() {
+        sidebar.classList.remove('mobile-open');
+        sidebarOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // Toggle buttons
+    if (sidebarToggleBtn) sidebarToggleBtn.addEventListener('click', toggleSidebar);
+    if (sidebarShowBtn) sidebarShowBtn.addEventListener('click', toggleSidebar);
+    if (headerToggleBtn) headerToggleBtn.addEventListener('click', toggleSidebar);
+
+    // Overlay closes sidebar on mobile
+    sidebarOverlay.addEventListener('click', closeMobileSidebar);
+
+    // Handle resize: if was mobile with sidebar open, close overlay on resize to desktop
+    window.addEventListener('resize', () => {
+        if (!isMobile()) {
+            closeMobileSidebar();
+            // Re-apply collapsed state
+            if (sidebarCollapsed) {
+                sidebar.classList.add('collapsed');
+                mainLayout.classList.add('sidebar-collapsed');
+            }
+        }
+    });
 
     // --- Auth ---
     async function checkAuth() {
@@ -61,18 +131,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Modal ---
-    window.openAuthModal = function() {
+    window.openAuthModal = function () {
         authModal.style.display = 'flex';
         document.getElementById('login-error').textContent = '';
         document.getElementById('register-error').textContent = '';
         closeMobileSidebar();
     };
 
-    window.closeAuthModal = function() {
+    window.closeAuthModal = function () {
         authModal.style.display = 'none';
     };
 
-    window.switchAuthTab = function(tab) {
+    window.switchAuthTab = function (tab) {
         const loginForm = document.getElementById('login-form');
         const registerForm = document.getElementById('register-form');
         const tabLogin = document.getElementById('tab-login');
@@ -100,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Login ---
-    window.handleLogin = async function(e) {
+    window.handleLogin = async function (e) {
         e.preventDefault();
         const errorEl = document.getElementById('login-error');
         errorEl.textContent = '';
@@ -137,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Register ---
-    window.handleRegister = async function(e) {
+    window.handleRegister = async function (e) {
         e.preventDefault();
         const errorEl = document.getElementById('register-error');
         errorEl.textContent = '';
@@ -178,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
     logoutBtn.addEventListener('click', async () => {
         try {
             await fetch('/api/logout', { method: 'POST' });
-        } catch (e) {}
+        } catch (e) { }
         currentUser = null;
         currentSessionId = null;
         updateUIForAuth();
@@ -192,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
         item.addEventListener('click', () => {
             const view = item.dataset.view;
             switchView(view);
-            closeMobileSidebar();
+            if (isMobile()) closeMobileSidebar();
         });
     });
 
@@ -210,24 +280,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Mobile Sidebar ---
-    mobileMenuBtn.addEventListener('click', () => {
-        sidebar.classList.toggle('open');
-    });
-
-    function closeMobileSidebar() {
-        sidebar.classList.remove('open');
-    }
-
-    // Close sidebar on outside click (mobile)
-    document.addEventListener('click', (e) => {
-        if (sidebar.classList.contains('open') &&
-            !sidebar.contains(e.target) &&
-            e.target !== mobileMenuBtn) {
-            closeMobileSidebar();
-        }
-    });
-
     // --- Chat Sessions ---
     async function createSession() {
         if (!currentUser) return null;
@@ -238,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentSessionId = data.session.id;
                 return data.session;
             }
-        } catch (e) {}
+        } catch (e) { }
         return null;
     }
 
@@ -268,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    window.loadSession = async function(sessionId) {
+    window.loadSession = async function (sessionId) {
         if (!currentUser) return;
         currentSessionId = sessionId;
 
@@ -299,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    window.deleteSession = async function(sessionId) {
+    window.deleteSession = async function (sessionId) {
         if (!currentUser) return;
         try {
             const res = await fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' });
@@ -310,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 loadSessions();
             }
-        } catch (e) {}
+        } catch (e) { }
     };
 
     function startNewChat() {
@@ -418,7 +470,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 addMessage('bot', data.reply);
-                // Update header with first message
                 if (currentUser && chatHeaderTitle.textContent === 'Welcome to RetroChat!') {
                     chatHeaderTitle.textContent = message.length > 40 ? message.substring(0, 40) + '...' : message;
                 }
