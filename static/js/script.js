@@ -1,3 +1,13 @@
+// ===== Mobile Viewport Height Fix =====
+// Fixes 100vh issue on mobile browsers (address bar overlaps content)
+function setViewportHeight() {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--real-vh', `${vh}px`);
+}
+setViewportHeight();
+window.addEventListener('resize', setViewportHeight);
+window.addEventListener('orientationchange', () => setTimeout(setViewportHeight, 150));
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- DOM Elements ---
     const chatMessages = document.getElementById('chat-messages');
@@ -131,18 +141,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Modal ---
-    window.openAuthModal = function () {
+    window.openAuthModal = function() {
         authModal.style.display = 'flex';
         document.getElementById('login-error').textContent = '';
         document.getElementById('register-error').textContent = '';
         closeMobileSidebar();
     };
 
-    window.closeAuthModal = function () {
+    window.closeAuthModal = function() {
         authModal.style.display = 'none';
     };
 
-    window.switchAuthTab = function (tab) {
+    window.switchAuthTab = function(tab) {
         const loginForm = document.getElementById('login-form');
         const registerForm = document.getElementById('register-form');
         const tabLogin = document.getElementById('tab-login');
@@ -170,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Login ---
-    window.handleLogin = async function (e) {
+    window.handleLogin = async function(e) {
         e.preventDefault();
         const errorEl = document.getElementById('login-error');
         errorEl.textContent = '';
@@ -207,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Register ---
-    window.handleRegister = async function (e) {
+    window.handleRegister = async function(e) {
         e.preventDefault();
         const errorEl = document.getElementById('register-error');
         errorEl.textContent = '';
@@ -248,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
     logoutBtn.addEventListener('click', async () => {
         try {
             await fetch('/api/logout', { method: 'POST' });
-        } catch (e) { }
+        } catch (e) {}
         currentUser = null;
         currentSessionId = null;
         updateUIForAuth();
@@ -290,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentSessionId = data.session.id;
                 return data.session;
             }
-        } catch (e) { }
+        } catch (e) {}
         return null;
     }
 
@@ -320,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    window.loadSession = async function (sessionId) {
+    window.loadSession = async function(sessionId) {
         if (!currentUser) return;
         currentSessionId = sessionId;
 
@@ -351,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    window.deleteSession = async function (sessionId) {
+    window.deleteSession = async function(sessionId) {
         if (!currentUser) return;
         try {
             const res = await fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' });
@@ -362,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 loadSessions();
             }
-        } catch (e) { }
+        } catch (e) {}
     };
 
     function startNewChat() {
