@@ -1,43 +1,275 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retro Chatbot 8-Bit</title>
-    <!-- Use Google Fonts for Retro 8-bit Font -->
+    <title>RetroChat • Your AI Buddy</title>
+    <meta name="description"
+        content="RetroChat - A retro 8-bit styled AI chatbot powered by Google Gemini. Chat with your pixel-art AI buddy!">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
-    <div class="scanlines"></div>
-    <div class="container">
-        <header class="header">
-            <h1>RETRO CHAT</h1>
-            <p>v1.0.0 - SYSTEM READY</p>
-        </header>
 
-        <main class="chat-window">
-            <div id="chat-messages" class="chat-messages">
-                <div class="message bot">
-                    <div class="avatar">BOT</div>
-                    <div class="content">Halo! Ada yang bisa saya bantu hari ini?</div>
+<body>
+    <div class="app-frame">
+        <!-- Title Bar -->
+        <div class="title-bar">
+            <span class="title-bar-text">RetroChat • Your AI Buddy</span>
+            <div class="title-bar-controls">
+                <span class="tb-btn tb-minimize">─</span>
+                <span class="tb-btn tb-maximize">□</span>
+                <span class="tb-btn tb-close">✕</span>
+            </div>
+        </div>
+
+        <!-- Browser Bar -->
+        <div class="browser-bar">
+            <div class="browser-nav">
+                <span class="nav-btn">←</span>
+                <span class="nav-btn">→</span>
+                <span class="nav-btn">↻</span>
+            </div>
+            <div class="address-bar">
+                <span class="lock-icon">🔒</span>
+                <span>https://retrochat.app</span>
+            </div>
+            <span class="bookmark-icon">☆</span>
+        </div>
+
+        <!-- Main Layout -->
+        <div class="main-layout">
+            <!-- Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <!-- Logo Area -->
+                <div class="sidebar-logo">
+                    <div class="pixel-computer">
+                        <div class="pc-screen">
+                            <div class="pc-face">
+                                <span class="pc-eye">■</span>
+                                <span class="pc-eye">■</span>
+                                <div class="pc-mouth">───</div>
+                            </div>
+                        </div>
+                        <div class="pc-base"></div>
+                        <div class="pc-stand"></div>
+                    </div>
+                    <h1 class="brand-name">RETROCHAT</h1>
+                    <p class="brand-tagline">★ Your AI Buddy ★</p>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="sidebar-nav">
+                    <button class="nav-item active" data-view="chat" id="nav-chat">
+                        <span class="nav-icon">💬</span>
+                        <span class="nav-label">Chat</span>
+                    </button>
+                    <button class="nav-item" data-view="history" id="nav-history">
+                        <span class="nav-icon">🕐</span>
+                        <span class="nav-label">History</span>
+                    </button>
+                    <button class="nav-item" data-view="settings" id="nav-settings">
+                        <span class="nav-icon">⚙️</span>
+                        <span class="nav-label">Settings</span>
+                    </button>
+                </nav>
+
+                <!-- Sidebar Footer -->
+                <div class="sidebar-footer">
+                    <!-- Auth Button (shown when NOT logged in) -->
+                    <button class="auth-btn" id="login-btn" onclick="openAuthModal()">
+                        <span class="auth-icon">👤</span>
+                        <span>Login / Register</span>
+                    </button>
+                    <!-- User Info (shown when logged in) -->
+                    <div class="user-info" id="user-info" style="display: none;">
+                        <div class="user-avatar-small">👤</div>
+                        <div class="user-details">
+                            <span class="user-name" id="sidebar-username">User</span>
+                            <span class="user-status">● Online</span>
+                        </div>
+                    </div>
+                    <p class="sidebar-credit">
+                        <span class="credit-heart">♥</span>
+                        Made with 8-bit love<br>for retro vibes.
+                    </p>
+                </div>
+            </aside>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Chat View -->
+                <div class="view-panel active" id="view-chat">
+                    <!-- Chat Header -->
+                    <div class="chat-header">
+                        <span class="chat-header-title" id="chat-header-title">Welcome to RetroChat!</span>
+                        <div class="chat-header-controls">
+                            <button class="new-chat-btn" id="new-chat-btn" title="New Chat" style="display: none;">
+                                ＋ New Chat
+                            </button>
+                            <div class="window-dots">
+                                <span class="dot dot-red"></span>
+                                <span class="dot dot-yellow"></span>
+                                <span class="dot dot-green"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages -->
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="message bot">
+                            <div class="avatar-wrapper bot-avatar">
+                                <div class="pixel-avatar-bot">
+                                    <div class="pab-screen">
+                                        <span class="pab-eye">■</span>
+                                        <span class="pab-eye">■</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bubble bot-bubble">
+                                <p>Hello there! 👋<br>How can I help you today?</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="input-area">
+                        <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off">
+                        <button id="send-button" title="Send">
+                            <svg class="send-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- History View -->
+                <div class="view-panel" id="view-history">
+                    <div class="panel-header">
+                        <span class="panel-title">Chat History</span>
+                        <div class="window-dots">
+                            <span class="dot dot-red"></span>
+                            <span class="dot dot-yellow"></span>
+                            <span class="dot dot-green"></span>
+                        </div>
+                    </div>
+                    <div class="panel-content" id="history-content">
+                        <div class="login-prompt" id="history-login-prompt">
+                            <div class="prompt-icon">🔒</div>
+                            <h3>Login Required</h3>
+                            <p>Please login to view your<br>chat history.</p>
+                            <button class="retro-btn" onclick="openAuthModal()">Login Now</button>
+                        </div>
+                        <div class="sessions-list" id="sessions-list" style="display: none;">
+                            <!-- Sessions loaded dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings View -->
+                <div class="view-panel" id="view-settings">
+                    <div class="panel-header">
+                        <span class="panel-title">Settings</span>
+                        <div class="window-dots">
+                            <span class="dot dot-red"></span>
+                            <span class="dot dot-yellow"></span>
+                            <span class="dot dot-green"></span>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <!-- Settings when logged in -->
+                        <div class="settings-logged-in" id="settings-logged-in" style="display: none;">
+                            <div class="settings-profile">
+                                <div class="settings-avatar">👤</div>
+                                <div class="settings-info">
+                                    <div class="settings-row">
+                                        <span class="settings-label">Username:</span>
+                                        <span class="settings-value" id="settings-username">-</span>
+                                    </div>
+                                    <div class="settings-row">
+                                        <span class="settings-label">Email:</span>
+                                        <span class="settings-value" id="settings-email">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="settings-actions">
+                                <button class="retro-btn danger" id="logout-btn">⏻ Logout</button>
+                            </div>
+                        </div>
+                        <!-- Settings when not logged in -->
+                        <div class="settings-logged-out" id="settings-logged-out">
+                            <div class="login-prompt">
+                                <div class="prompt-icon">⚙️</div>
+                                <h3>Login Required</h3>
+                                <p>Please login to access<br>your settings.</p>
+                                <button class="retro-btn" onclick="openAuthModal()">Login Now</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <div class="input-area">
-                <span class="prompt-symbol">&gt;</span>
-                <input type="text" id="user-input" placeholder="Tulis pesan..." autocomplete="off">
-                <button id="send-button">KIRIM</button>
-            </div>
-        </main>
-
-        <footer class="footer">
-            <p>WARNING: CHAT HISTORY IS NOT SAVED. REFRESHING WILL CLEAR ALL DATA.</p>
-        </footer>
+        </div>
     </div>
 
-    <!-- Include marked.js to parse markdown from the bot -->
+    <!-- Auth Modal -->
+    <div class="modal-overlay" id="auth-modal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title" id="modal-title">Login</span>
+                <button class="modal-close" onclick="closeAuthModal()">✕</button>
+            </div>
+            <div class="modal-tabs">
+                <button class="modal-tab active" id="tab-login" onclick="switchAuthTab('login')">Login</button>
+                <button class="modal-tab" id="tab-register" onclick="switchAuthTab('register')">Register</button>
+            </div>
+            <div class="modal-body">
+                <!-- Login Form -->
+                <form class="auth-form" id="login-form" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="login-username">Username</label>
+                        <input type="text" id="login-username" placeholder="Enter username" required
+                            autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" placeholder="Enter password" required
+                            autocomplete="current-password">
+                    </div>
+                    <div class="form-error" id="login-error"></div>
+                    <button type="submit" class="retro-btn submit-btn" id="login-submit">
+                        ▶ LOGIN
+                    </button>
+                </form>
+                <!-- Register Form -->
+                <form class="auth-form" id="register-form" style="display: none;" onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <label for="register-username">Username</label>
+                        <input type="text" id="register-username" placeholder="Choose username" required minlength="3"
+                            autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" placeholder="Enter email" required autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" placeholder="Min 6 characters" required
+                            minlength="6" autocomplete="new-password">
+                    </div>
+                    <div class="form-error" id="register-error"></div>
+                    <button type="submit" class="retro-btn submit-btn" id="register-submit">
+                        ▶ REGISTER
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Sidebar Toggle -->
+    <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle menu">☰</button>
+
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
+
 </html>

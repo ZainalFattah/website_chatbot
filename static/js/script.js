@@ -1,13 +1,339 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- DOM Elements ---
     const chatMessages = document.getElementById('chat-messages');
     const userInput = document.getElementById('user-input');
     const sendButton = document.getElementById('send-button');
+    const navItems = document.querySelectorAll('.nav-item');
+    const loginBtn = document.getElementById('login-btn');
+    const userInfoEl = document.getElementById('user-info');
+    const sidebarUsername = document.getElementById('sidebar-username');
+    const authModal = document.getElementById('auth-modal');
+    const newChatBtn = document.getElementById('new-chat-btn');
+    const chatHeaderTitle = document.getElementById('chat-header-title');
+    const logoutBtn = document.getElementById('logout-btn');
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const sidebar = document.getElementById('sidebar');
 
-    // Configure marked to sanitize HTML to prevent XSS (basic)
-    // In a real prod app you might use DOMPurify
+    // --- State ---
+    let currentUser = null;
+    let currentSessionId = null;
+    let isLoading = false;
 
+    // --- Init ---
+    checkAuth();
+    userInput.focus();
+
+    // --- Auth ---
+    async function checkAuth() {
+        try {
+            const res = await fetch('/api/me');
+            const data = await res.json();
+            currentUser = data.user;
+            updateUIForAuth();
+        } catch (e) {
+            currentUser = null;
+            updateUIForAuth();
+        }
+    }
+
+    function updateUIForAuth() {
+        if (currentUser) {
+            loginBtn.style.display = 'none';
+            userInfoEl.style.display = 'flex';
+            sidebarUsername.textContent = currentUser.username;
+            newChatBtn.style.display = 'inline-block';
+            document.getElementById('settings-logged-in').style.display = 'block';
+            document.getElementById('settings-logged-out').style.display = 'none';
+            document.getElementById('settings-username').textContent = currentUser.username;
+            document.getElementById('settings-email').textContent = currentUser.email;
+            document.getElementById('history-login-prompt').style.display = 'none';
+            document.getElementById('sessions-list').style.display = 'flex';
+        } else {
+            loginBtn.style.display = 'flex';
+            userInfoEl.style.display = 'none';
+            newChatBtn.style.display = 'none';
+            document.getElementById('settings-logged-in').style.display = 'none';
+            document.getElementById('settings-logged-out').style.display = 'block';
+            document.getElementById('history-login-prompt').style.display = 'flex';
+            document.getElementById('sessions-list').style.display = 'none';
+            currentSessionId = null;
+        }
+    }
+
+    // --- Modal ---
+    window.openAuthModal = function() {
+        authModal.style.display = 'flex';
+        document.getElementById('login-error').textContent = '';
+        document.getElementById('register-error').textContent = '';
+        closeMobileSidebar();
+    };
+
+    window.closeAuthModal = function() {
+        authModal.style.display = 'none';
+    };
+
+    window.switchAuthTab = function(tab) {
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const tabLogin = document.getElementById('tab-login');
+        const tabRegister = document.getElementById('tab-register');
+        const modalTitle = document.getElementById('modal-title');
+
+        if (tab === 'login') {
+            loginForm.style.display = 'flex';
+            registerForm.style.display = 'none';
+            tabLogin.classList.add('active');
+            tabRegister.classList.remove('active');
+            modalTitle.textContent = 'Login';
+        } else {
+            loginForm.style.display = 'none';
+            registerForm.style.display = 'flex';
+            tabLogin.classList.remove('active');
+            tabRegister.classList.add('active');
+            modalTitle.textContent = 'Register';
+        }
+    };
+
+    // Close modal on overlay click
+    authModal.addEventListener('click', (e) => {
+        if (e.target === authModal) closeAuthModal();
+    });
+
+    // --- Login ---
+    window.handleLogin = async function(e) {
+        e.preventDefault();
+        const errorEl = document.getElementById('login-error');
+        errorEl.textContent = '';
+
+        const username = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value;
+
+        if (!username || !password) {
+            errorEl.textContent = 'All fields required.';
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                currentUser = data.user;
+                closeAuthModal();
+                updateUIForAuth();
+                startNewChat();
+                loadSessions();
+                document.getElementById('login-form').reset();
+            } else {
+                errorEl.textContent = data.error || 'Login failed.';
+            }
+        } catch (err) {
+            errorEl.textContent = 'Connection error.';
+        }
+    };
+
+    // --- Register ---
+    window.handleRegister = async function(e) {
+        e.preventDefault();
+        const errorEl = document.getElementById('register-error');
+        errorEl.textContent = '';
+
+        const username = document.getElementById('register-username').value.trim();
+        const email = document.getElementById('register-email').value.trim();
+        const password = document.getElementById('register-password').value;
+
+        if (!username || !email || !password) {
+            errorEl.textContent = 'All fields required.';
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, password })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                currentUser = data.user;
+                closeAuthModal();
+                updateUIForAuth();
+                startNewChat();
+                loadSessions();
+                document.getElementById('register-form').reset();
+            } else {
+                errorEl.textContent = data.error || 'Registration failed.';
+            }
+        } catch (err) {
+            errorEl.textContent = 'Connection error.';
+        }
+    };
+
+    // --- Logout ---
+    logoutBtn.addEventListener('click', async () => {
+        try {
+            await fetch('/api/logout', { method: 'POST' });
+        } catch (e) {}
+        currentUser = null;
+        currentSessionId = null;
+        updateUIForAuth();
+        clearChat();
+        addBotWelcome();
+        switchView('chat');
+    });
+
+    // --- Navigation ---
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const view = item.dataset.view;
+            switchView(view);
+            closeMobileSidebar();
+        });
+    });
+
+    function switchView(view) {
+        navItems.forEach(n => n.classList.remove('active'));
+        document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+
+        const navEl = document.querySelector(`[data-view="${view}"]`);
+        const panelEl = document.getElementById(`view-${view}`);
+        if (navEl) navEl.classList.add('active');
+        if (panelEl) panelEl.classList.add('active');
+
+        if (view === 'history' && currentUser) {
+            loadSessions();
+        }
+    }
+
+    // --- Mobile Sidebar ---
+    mobileMenuBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+    });
+
+    function closeMobileSidebar() {
+        sidebar.classList.remove('open');
+    }
+
+    // Close sidebar on outside click (mobile)
+    document.addEventListener('click', (e) => {
+        if (sidebar.classList.contains('open') &&
+            !sidebar.contains(e.target) &&
+            e.target !== mobileMenuBtn) {
+            closeMobileSidebar();
+        }
+    });
+
+    // --- Chat Sessions ---
+    async function createSession() {
+        if (!currentUser) return null;
+        try {
+            const res = await fetch('/api/sessions', { method: 'POST' });
+            const data = await res.json();
+            if (res.ok) {
+                currentSessionId = data.session.id;
+                return data.session;
+            }
+        } catch (e) {}
+        return null;
+    }
+
+    async function loadSessions() {
+        if (!currentUser) return;
+        const listEl = document.getElementById('sessions-list');
+        try {
+            const res = await fetch('/api/sessions');
+            const data = await res.json();
+            if (res.ok) {
+                if (data.sessions.length === 0) {
+                    listEl.innerHTML = '<div class="empty-history">No chat history yet.<br>Start a new conversation!</div>';
+                    return;
+                }
+                listEl.innerHTML = data.sessions.map(s => `
+                    <div class="session-item" data-id="${s.id}">
+                        <div class="session-info" onclick="loadSession(${s.id})">
+                            <div class="session-title">${escapeHtml(s.title)}</div>
+                            <div class="session-date">${formatDate(s.updated_at)}</div>
+                        </div>
+                        <button class="session-delete" onclick="event.stopPropagation(); deleteSession(${s.id})" title="Delete">✕</button>
+                    </div>
+                `).join('');
+            }
+        } catch (e) {
+            listEl.innerHTML = '<div class="empty-history">Failed to load history.</div>';
+        }
+    }
+
+    window.loadSession = async function(sessionId) {
+        if (!currentUser) return;
+        currentSessionId = sessionId;
+
+        try {
+            const res = await fetch(`/api/sessions/${sessionId}/messages`);
+            const data = await res.json();
+            if (res.ok) {
+                clearChat();
+                if (data.messages.length === 0) {
+                    addBotWelcome();
+                } else {
+                    data.messages.forEach(msg => {
+                        addMessage(msg.sender, msg.content);
+                    });
+                }
+                switchView('chat');
+
+                // Update header title
+                const sessRes = await fetch('/api/sessions');
+                const sessData = await sessRes.json();
+                if (sessRes.ok) {
+                    const sess = sessData.sessions.find(s => s.id === sessionId);
+                    if (sess) chatHeaderTitle.textContent = sess.title;
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load session:', e);
+        }
+    };
+
+    window.deleteSession = async function(sessionId) {
+        if (!currentUser) return;
+        try {
+            const res = await fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' });
+            if (res.ok) {
+                if (currentSessionId === sessionId) {
+                    currentSessionId = null;
+                    startNewChat();
+                }
+                loadSessions();
+            }
+        } catch (e) {}
+    };
+
+    function startNewChat() {
+        currentSessionId = null;
+        clearChat();
+        addBotWelcome();
+        chatHeaderTitle.textContent = 'Welcome to RetroChat!';
+        switchView('chat');
+    }
+
+    newChatBtn.addEventListener('click', startNewChat);
+
+    // --- Chat Functions ---
     function scrollToBottom() {
         chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function clearChat() {
+        chatMessages.innerHTML = '';
+    }
+
+    function addBotWelcome() {
+        addMessage('bot', 'Hello there! 👋\nHow can I help you today?');
     }
 
     function addMessage(sender, text) {
@@ -15,86 +341,121 @@ document.addEventListener('DOMContentLoaded', () => {
         messageDiv.classList.add('message', sender);
 
         const avatarDiv = document.createElement('div');
-        avatarDiv.classList.add('avatar');
-        avatarDiv.textContent = sender === 'user' ? 'YOU' : 'BOT';
-
-        const contentDiv = document.createElement('div');
-        contentDiv.classList.add('content');
+        avatarDiv.classList.add('avatar-wrapper', sender === 'bot' ? 'bot-avatar' : 'user-avatar');
 
         if (sender === 'bot') {
-            // Parse Markdown for bot responses
-            contentDiv.innerHTML = marked.parse(text);
+            avatarDiv.innerHTML = '<div class="pixel-avatar-bot"><div class="pab-screen"><span class="pab-eye">■</span><span class="pab-eye">■</span></div></div>';
         } else {
-            // Plain text for user
-            contentDiv.textContent = text;
+            avatarDiv.innerHTML = '<div class="pixel-avatar-user">👤</div>';
+        }
+
+        const bubbleDiv = document.createElement('div');
+        bubbleDiv.classList.add('bubble', sender === 'bot' ? 'bot-bubble' : 'user-bubble');
+
+        if (sender === 'bot') {
+            try {
+                bubbleDiv.innerHTML = marked.parse(text);
+            } catch (e) {
+                bubbleDiv.textContent = text;
+            }
+        } else {
+            bubbleDiv.textContent = text;
         }
 
         messageDiv.appendChild(avatarDiv);
-        messageDiv.appendChild(contentDiv);
+        messageDiv.appendChild(bubbleDiv);
         chatMessages.appendChild(messageDiv);
-
         scrollToBottom();
+    }
+
+    function addLoadingMessage() {
+        const id = 'loading-' + Date.now();
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', 'bot');
+        messageDiv.id = id;
+        messageDiv.innerHTML = `
+            <div class="avatar-wrapper bot-avatar">
+                <div class="pixel-avatar-bot"><div class="pab-screen"><span class="pab-eye">■</span><span class="pab-eye">■</span></div></div>
+            </div>
+            <div class="bubble bot-bubble">
+                <div class="typing-dots"><span></span><span></span><span></span></div>
+            </div>
+        `;
+        chatMessages.appendChild(messageDiv);
+        scrollToBottom();
+        return id;
     }
 
     async function sendMessage() {
         const message = userInput.value.trim();
-        if (!message) return;
+        if (!message || isLoading) return;
+        isLoading = true;
 
-        // 1. Show user message
         addMessage('user', message);
         userInput.value = '';
         userInput.focus();
 
-        // 2. Show loading indicator
-        const loadingId = 'loading-' + Date.now();
-        const loadingDiv = document.createElement('div');
-        loadingDiv.classList.add('message', 'bot');
-        loadingDiv.id = loadingId;
-        loadingDiv.innerHTML = `
-            <div class="avatar">BOT</div>
-            <div class="content">PROCESSING...</div>
-        `;
-        chatMessages.appendChild(loadingDiv);
-        scrollToBottom();
+        // Create session if logged in and no current session
+        if (currentUser && !currentSessionId) {
+            await createSession();
+        }
 
-        // 3. Call backend API
+        const loadingId = addLoadingMessage();
+
         try {
+            const body = { message };
+            if (currentSessionId) body.session_id = currentSessionId;
+
             const response = await fetch('/api/chat', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ message: message })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
             });
-
             const data = await response.json();
 
-            // Remove loading
-            document.getElementById(loadingId).remove();
+            const loadingEl = document.getElementById(loadingId);
+            if (loadingEl) loadingEl.remove();
 
             if (response.ok) {
                 addMessage('bot', data.reply);
+                // Update header with first message
+                if (currentUser && chatHeaderTitle.textContent === 'Welcome to RetroChat!') {
+                    chatHeaderTitle.textContent = message.length > 40 ? message.substring(0, 40) + '...' : message;
+                }
             } else {
                 addMessage('bot', `ERROR: ${data.error || 'SYSTEM FAILURE'}`);
             }
         } catch (error) {
-            console.error('Error:', error);
-            // Remove loading
             const loadingEl = document.getElementById(loadingId);
             if (loadingEl) loadingEl.remove();
-
-            addMessage('bot', 'CONNECTION ERROR. PLEASE CHECK YOUR NETWORK.');
+            addMessage('bot', 'CONNECTION ERROR. Please check your network.');
         }
+
+        isLoading = false;
     }
 
+    // --- Event Listeners ---
     sendButton.addEventListener('click', sendMessage);
-
     userInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            sendMessage();
-        }
+        if (e.key === 'Enter') sendMessage();
     });
 
-    // Initial focus
-    userInput.focus();
+    // --- Utilities ---
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function formatDate(dateStr) {
+        try {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('id-ID', {
+                day: 'numeric', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+        } catch (e) {
+            return dateStr;
+        }
+    }
 });
